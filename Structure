@@ -1,0 +1,11 @@
+base-prediction-market/
+│
+├─ contracts/
+│   ├─ PredictionMarket.sol   # Smart contract prediction market
+│
+├─ scripts/
+│   ├─ deploy.js              # Optional deploy script
+│
+├─ README.md                  # Full deployment and usage guide
+│
+└─ .gitignore
