@@ -1,0 +1,76 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract PredictionMarket is Ownable {
+    IERC20 public bettingToken; // ERC20 token used for betting
+
+    struct Outcome {
+        string name;
+        uint256 totalBet;
+    }
+
+    mapping(uint256 => Outcome) public outcomes;
+    mapping(address => mapping(uint256 => uint256)) public bets;
+    uint256 public outcomeCount;
+    bool public marketClosed;
+    uint256 public winningOutcomeId;
+
+    event BetPlaced(address indexed user, uint256 indexed outcomeId, uint256 amount);
+    event MarketClosed(uint256 winningOutcomeId);
+    event Payout(address indexed user, uint256 amount);
+
+    constructor(address _bettingToken, string[] memory _outcomeNames) {
+        bettingToken = IERC20(_bettingToken);
+        for (uint256 i = 0; i < _outcomeNames.length; i++) {
+            outcomes[i] = Outcome(_outcomeNames[i], 0);
+            outcomeCount++;
+        }
+    }
+
+    function placeBet(uint256 _outcomeId, uint256 _amount) external {
+        require(!marketClosed, "Market closed");
+        require(_outcomeId < outcomeCount, "Invalid outcome");
+        require(_amount > 0, "Amount must be > 0");
+
+        bettingToken.transferFrom(msg.sender, address(this), _amount);
+        bets[msg.sender][_outcomeId] += _amount;
+        outcomes[_outcomeId].totalBet += _amount;
+
+        emit BetPlaced(msg.sender, _outcomeId, _amount);
+    }
+
+    function closeMarket(uint256 _winningOutcomeId) external onlyOwner {
+        require(!marketClosed, "Market already closed");
+        require(_winningOutcomeId < outcomeCount, "Invalid winning outcome");
+
+        marketClosed = true;
+        winningOutcomeId = _winningOutcomeId;
+
+        emit MarketClosed(_winningOutcomeId);
+    }
+
+    function claimPayout() external {
+        require(marketClosed, "Market not closed");
+        uint256 userBet = bets[msg.sender][winningOutcomeId];
+        require(userBet > 0, "No winning bet");
+
+        uint256 totalWinningPool = outcomes[winningOutcomeId].totalBet;
+        uint256 totalPool = 0;
+        for (uint256 i = 0; i < outcomeCount; i++) {
+            totalPool += outcomes[i].totalBet;
+        }
+
+        uint256 payoutAmount = (userBet * totalPool) / totalWinningPool;
+        bets[msg.sender][winningOutcomeId] = 0;
+
+        bettingToken.transfer(msg.sender, payoutAmount);
+        emit Payout(msg.sender, payoutAmount);
+    }
+
+    function withdrawTokens(uint256 _amount) external onlyOwner {
+        bettingToken.transfer(msg.sender, _amount);
+    }
+}
