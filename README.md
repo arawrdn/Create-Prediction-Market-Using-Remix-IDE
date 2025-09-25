@@ -7,7 +7,7 @@ This repository contains a simple **Prediction Market** smart contract deployabl
 ## 1. Open Remix IDE
 
 - Go to [https://remix.ethereum.org](https://remix.ethereum.org)  
-- Connect your wallet (e.g., MetaMask) to Base Testnet or Mainnet.
+- Connect your wallet (e.g., MetaMask, OKX, Bitget) to Base Testnet or Mainnet.
 
 ---
 
